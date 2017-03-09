@@ -31,8 +31,13 @@ vagrant box add intro2docker CentOS-7-x86_64-Vagrant-1701_01.VirtualBox.box
 vagrant init intro2docker
 vagrant up
 vagrant status 
-
+vagrant global-status
 ```
+Finally please add in vagrant-vbguest to allow us to mount folders (necessary for some future labs)
+
+```vagrant plugin install vagrant-vbguest```
+
+*Note: You may need to alter your vagrantfile when mounting! If this is the case please note that we will need to look at the config.vm.synced_folder in the vagrantfile and updating it accordingly!*
 
 Now let's go in there and look around: `vagrant ssh` and just to make sure that we are on the right version: `cat /etc/redhat-release`
 
@@ -129,7 +134,7 @@ Obviously you have gotten the most advanced return ever seen by the eyes of man 
 What I want you to take away from this is the "docker run" command. 
 Initially it searched for the image locally, couldn't find it, and immediately searched the repo, then pulled it, then ran it. Kind of a neat trick, right? Three steps in one...
 If you have the time or inclination you can get the whale to say other things by (obviously) changing the parameter.
->Challenge: Take five minutes and run and/or pull some other images from the >repo
+>Challenge: Take ten minutes and run and/or pull some other images from the repo
 
 
 ###Step Two: Managing images locally
@@ -173,16 +178,38 @@ One thing to note- run a quick `ps` from in this container and note what the top
 So now let's explore some other options with our image. [Here](https://docs.docker.com/v1.13/engine/reference/commandline/run/) is a complete list of options for docker run. There are some extremely common options here that are worth exploring in depth as they are commonly used at the dev level. 
 
 Let's start with the working directory flag "-w" which is how we set the working directory within the container. If it does not exist then it is created. So we would do that with: `docker run -w /main/directory/ -it ubuntu bash` and as you can see- we are in the newly created "wortking directory" that we just set within our container. 
-For mounted volumes- which are essential because in docker *this is how we create persistence* we have the **-v** (volume) command which will mount a volume from the host to the container. Write code in mounted volume, it persists, build container. Let's mount our current directory:
+For mounted volumes- which are essential because in docker *this is how we create persistence* we have the **-v** (volume) command which will mount a volume from the host to the container. Write code in mounted volume, it persists, build container. 
+First let's make a directory to work from: `mkdir docker_practice`
+Then:
+`cd docker_practice`
+Okay- now let's mount our current directory:
 ```
 docker  run  -v `pwd`:`pwd` -w `pwd` -i -t  ubuntu bash
 
 ```
 and run a quick `pwd` from inside this container and you can see that we have a mounted working directory. 
 *If the host directory does not exist* then docker will create it for you on the host before starting the container* which is kind of cool. 
-You can set permissions in the mounted files with  
+Containers come and go. Files that go in containers need to be mounted on the host.
+Now let's create a quick little file in here that we can run.
+Let's do a quick little python app...  
+You will find a copy of "requirements.txt" in the lab_02 directory. We'll use this to build our little app. We want that in our mounted directory so copy it into our mounted directory: */vagrant_mounted*
+Let's also grab the *actual* code that goes along with this- so make a copy of fernapp.py into */vagrant_mounted/*
+Now let's get all of the packages we need in our little docker container:
+```
+apt-get update && apt-get upgrade
+apt-get install -y python-dev python-pip
+pip install uwsgi
+pip install -r requirements.txt
+python fernapp.py
+```
+DARN that was a lot of work! And the worst part! When you `exit` from the program....all gone! 
 
-Containers come and go. Files that go in containers need to be mounted on the host. In order to mount the file we utilize the "-v" option. SO- if we wanted to mount our current working directory into our bright, shiny new ubuntu container we would do this:
+
+
+
+
+
+ In order to mount the file we utilize the "-v" option. SO- if we wanted to mount our current working directory into our bright, shiny new ubuntu container we would do this:
 docker run -v 
 
 
