@@ -177,44 +177,88 @@ One thing to note- run a quick `ps` from in this container and note what the top
 ### Step Four: 
 So now let's explore some other options with our image. [Here](https://docs.docker.com/v1.13/engine/reference/commandline/run/) is a complete list of options for docker run. There are some extremely common options here that are worth exploring in depth as they are commonly used at the dev level. 
 
-Let's start with the working directory flag "-w" which is how we set the working directory within the container. If it does not exist then it is created. So we would do that with: `docker run -w /main/directory/ -it ubuntu bash` and as you can see- we are in the newly created "wortking directory" that we just set within our container. 
+First thing to do is to look at fixing those complex image ids. Let's tag our image. Please run this command `docker tag ubuntu:latest uspto:practice`
+Now let's see if it's there with `docker images`
+Tagging is one of those really useful things that you should do up front- will save you agony down the road when you're dealing with a hundred or more containers!
+
+Let's start with the working directory flag "-w" which is how we set the working directory within the container. If it does not exist then it is created. So we would do that with: `docker run -w /main/directory/ -it ubuntu bash` and as you can see- we are in the newly created "working directory" that we just set within our container. 
 For mounted volumes- which are essential because in docker *this is how we create persistence* we have the **-v** (volume) command which will mount a volume from the host to the container. Write code in mounted volume, it persists, build container. 
 First let's make a directory to work from: `mkdir docker_practice`
 Then:
 `cd docker_practice`
 Okay- now let's mount our current directory:
 ```
-docker  run  -v `pwd`:`pwd` -w `pwd` -i -t  ubuntu bash
+docker  run  -v `pwd`:`pwd` -w `pwd` -i -t uspto:practice bash
 
 ```
 and run a quick `pwd` from inside this container and you can see that we have a mounted working directory. 
 *If the host directory does not exist* then docker will create it for you on the host before starting the container* which is kind of cool. 
 Containers come and go. Files that go in containers need to be mounted on the host.
+Type `exit` and leave the container for a minute. 
+Now that we are back in our vagrant box (type "pwd" to make sure!) let's take a look at the container we just created! 
+*Remember that **docker run** will take an image and create a container*
+On the command line type `docker ps`
+Okay- nothing, right?
+Type `docker ps -a` ("a" is for "all")
+You should now see your container. The reason it did not work under "docker ps" is because the container was *not running at the time*
+This does not mean that we cannot run our docker container- and that is where another important command comes in: `docker exec`
+`docker exec` basically means "execute this container". It's a way to pass a command line command into a container and have it executed. Let's give it a shot:
+```
+docker ps -a
+<copy your docker container id>
+docker exec <docker container id> echo "Hello I am a container!"
+```
+And....wait a second! STILL not running! Let's get it running with `docker run` BUT- we'll want it running in "detached" mode so that it will *not shut down* when we exit it! 
+We do that with the "-d" tag as follows:
+`docker run -i -t -d uspto:practice`
+Now go back up and try our previous command again (you created a new container so you will need to get the new container id. You are creating a new container **every time** you type out `docker run`)
+So what is the takeaway here? 
+First off- docker containers are built and die in one command. They are *microservices* (as we went over in the lecture) and they are thus intended to do a single thing and die. They are not really built for **persistence**. 
+That being said- you can **absolutely** have them persist by putting them into the "detached" mode utilizing the "-d" option in run. This means that they will continue to live
+
 Now let's create a quick little file in here that we can run.
 Let's do a quick little python app...  
 You will find a copy of "requirements.txt" in the lab_02 directory. We'll use this to build our little app. We want that in our mounted directory so copy it into our mounted directory: */vagrant_mounted*
 Let's also grab the *actual* code that goes along with this- so make a copy of fernapp.py into */vagrant_mounted/*
 Now let's get all of the packages we need in our little docker container:
 ```
-apt-get update && apt-get upgrade
+apt-get update && apt-get upgrade -y
 apt-get install -y python-dev python-pip
 pip install uwsgi
 pip install -r requirements.txt
 python fernapp.py
 ```
 DARN that was a lot of work! And the worst part! When you `exit` from the program....all gone! 
+Well...not so fast! 
+Exit from the program (either with `CTRL P` and then `CTRL Q` or by typing *exit* on the command line)
+Now that we're out run a `docker ps` and grab your container name
+Let's commit that:
+`docker commmit <container name> uspto/practice`
 
-
-
-
-
-
- In order to mount the file we utilize the "-v" option. SO- if we wanted to mount our current working directory into our bright, shiny new ubuntu container we would do this:
-docker run -v 
-
-
+And let's try running it:
 #### Challenge time:
-Okay- for each of you please download and run a ubuntu image and then get into that image and install python 3.4. 
+Here's what we need to do to run this. You *have* the necessary tools! 
+Step one: make a running, *detached* container (so that it keeps running)
+Step two: execute a simple command on the command line into the container
+Step three: write a simple "sh" file in the container that you can execute from outside the container by typing "sh <yourfile>". 
+
+So how do we build our docker container "around" our application?
+
+## Module 3: Dockerfile
+
+###Step One: build our application:
+Okay- so we've decided to build a single application using docker!
+Remembering that docker is built around a "microservices" philosophy- let's do this using our old "MVC framework" methodology and break our application into three parts:
+	1. Model: our server (we'll do MYSQL)
+	2. View: our front end (html)
+	3. Controller: our code (PHP)
+
+
+
+
+
+
+
 
 
 
