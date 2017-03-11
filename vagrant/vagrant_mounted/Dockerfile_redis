@@ -1,0 +1,12 @@
+FROM python:2.7
+
+WORKDIR /docker_practice
+
+ADD requirements.txt /docker_practice/requirements.txt
+RUN pip install -r requirements.txt
+
+ADD redisapp.py /docker_practice/redisapp.py
+
+EXPOSE 80
+
+CMD ["python", "redisapp.py"]

@@ -48,7 +48,7 @@ And, of course, let's: `sudo yum update && sudo yum upgrade` because we want to 
 Okay! We're good to go now with our (basic) environment. 
 
 #### Step Three- install utilizing docker repository	
-For this next step we're going to be doing an install utilizing the repository. This will become more important in modules 5 & 6 but for now let's start here: `sudo yum install -y yum-utils`
+For this next step we're going to be doing an install utilizing the repository. This will become more important in modules 4 & 5 but for now let's start here: `sudo yum install -y yum-utils`
 
 Now we're going to add our repo: 
 ```
@@ -61,7 +61,13 @@ Now let's enable the edge repository (it's included in the docker.repo file) but
 Now we're going to update the yum package index: `sudo yum makecache fast`
 
 And now (finally) we're ready to install the latest *non-enterprise* version of docker. When you want to go enterprise you can have your own personalized repo which is awesome for managing images: `sudo yum -y install docker-ce`
-
+We will also want to run the following:
+```
+sudo yum install epel-release
+sudo yum install -y python-pip
+sudo pip install docker-compose
+sudo yum upgrade python*
+```
 Please note that what we've done here only installs the LATEST versions of docker. If you want to go version specific you can add the <VERSION> to the end of the sudo yum install docker-ce-<VERSION>
 
 Okay-let's start her up: `sudo systemctl start docker`
@@ -245,13 +251,131 @@ Step three: write a simple "sh" file in the container that you can execute from 
 So how do we build our docker container "around" our application?
 
 ## Module 3: Dockerfile
-
-###Step One: build our application:
 Okay- so we've decided to build a single application using docker!
-Remembering that docker is built around a "microservices" philosophy- let's do this using our old "MVC framework" methodology and break our application into three parts:
-	1. Model: our server (we'll do MYSQL)
-	2. View: our front end (html)
-	3. Controller: our code (PHP)
+Remembering that docker is built around a "microservices" philosophy- let's do this using our old "MVC framework" methodology and break our application into two basic parts:
+	1. Model: our server (we'll do POSTGRESQL)
+	3. Controller: our code (python)
+Let's set everything up so that we have a persistent "blueprint"
+
+
+###Step One: Build out our model:
+So now we'll need all of the requirements for a good postgresql database and place them in our Dockerfile. 
+I have a dockerfile in the lab03 subfolder. Go in there and take a look at it keeping in mind what we learned from the previous lecture about what each of the commands means. 
+We will need to copy this file into your mounted directory to allow vagrant to pick it up. 
+Once it is in your mounted directory ssh into vagrant and cd into the folder where it exists. 
+Now run this command: 
+```
+docker build -t postgres_container .
+```
+Now your postgres container will be build *and* tagged with a name!
+Just to show you another capability- if you run that same command again it will rebuild the postgres_container from the cache. You have an option to completely rebuild from the ground up from your *Dockerfile* by using the
+*--no-cache* option. 
+It's a good one to know if you build the container and then want to make changes to your dockerfile and rebuild the container from the ground up. 
+As we learned from the last lab- just because we have built the container doesn't mean it's running, though. At this point we have two options to run the new postgres container- through container linking (which is the next lab so don't want to spoil it) or directly from the host. 
+Let's run it from the host:
+
+Run a `docker images` and you should see your image that you just built. From here we need to run it. 
+
+```
+docker run --rm -P -d --name pg_test postgres_container
+```
+And now run a `docker ps` to make sure that it is installed successfully.
+Please note the port forwarding when you docker ps here- you are forwarding into port 5432 of your main host. If you don't have postgresql installed on your virtual machine yet you can run `sudo yum install -y postgresql` and get it. Please do that now. 
+Once postgres is installed let's forward into our docker container. In my example the port forwarding was from port 32769 so I will use this command to access postgresql in my docker container:
+`psql -h localhost -p 32769 -d docker -U docker --password`
+Spoiler alert- the password is *docker*
+
+So now we have command line access to PSQL! Put in an entry if you'd like (don't forget to create a table first). 
+
+Obviously the next issue is that we will need to persist this data somehow, right? I mean- a database is only good if the data lasts. 
+This is where the MOUNTED VOLUMES becomes essential.
+Use *\q* to back out of the psql command line and vi into your dockerfile (if you don't have vim installed yet run a `sudo yum install vim`)
+You see where we are mounting the files there? This is essential. 
+
+###Step Two: Build out our controller:
+Now that we have our model built out (sort of)- let's build out our controller. Let's use *python* for this exercise. 
+First thing we'll want to do (as we'll be using different Dockerfiles for this) is minimize confusion. Please alter the name of the existing dockerfile to *Dockerfile_postgres*: `mv Dockerfile Dockerfile_postgres`
+Now let's grab another Dockerfile. This one will be relatively simple- you can find it in the root directory as *Dockerfile_python*
+Vim into it and take a look at it.
+You can probably see what it does in pretty plain language. Let's try building it! 
+```
+docker build -t controller:latest -f Dockerfile_python .
+```
+In this case you see us using the "-f" which is for "file". 
+The "." means "build it right here". 
+NOW- before we *run* this container let's make a quick alteration and take advantage of port forwarding again! 
+```
+docker run -p 5000:5000 controller
+```
+So what we're saying is *"take this flask app, point it at port 5000 (which
+we are forwarding to) and run it "*
+
+No open another tab and run `curl 127.0.0.1:5000`
+You should get a message there. 
+And this is how we build a basic container!
+Going back to our original tab you should see the log from where we hit! 
+Obviously if we *had* a browser here you would see this as a web page.
+
+So now what if we wanted to connect these two containers? 
+That will be the subject of our next lab. 
+
+##Challenge: 
+Create a Dockerfile and an app that outputs the square of a number given in the "run" command. (you may need to google some of this but you have all the tools!)
+
+##Module 4: The Docker yaml files
+The docker yaml file is how we link together numerous containers to create an app. It basically creates multiple containers, creates a network for them, and then links them. 
+In this exercise we will be utilizing the docker-compose command on our yamls. To review where we are thus far: 
+`docker build` -- builds the image
+`docker run ` -- builds the container (instantiates the image)
+*Dockerfile* is the blueprint for the image. 
+Now let's talk about `docker-compose` which utilizes a yaml to merge multiple containers together into an app (thus allowing us to keep our "microservices philosophy" intact).
+To demonstrate how this works we'll build a simple redis/python flask app counter that will run on localhost. 
+
+This application will require *two* containers to run: a *web app* that will basically run the web section and then a *redis* image to act as our back end (to ensure persistence)
+The first thing we want to do (obviously) is copy the files over to our mounted system from the lab_04 directory...so let's do that. 
+
+Once everything is over we will engage in our first "docker-compose" command- which will be very similar to our "docker build" command:
+```
+docker-compose -f docker-compose.yml --project-name redis_and_python build
+```
+Where the -f points to a file and (notice the change here!) you will change from --name to --project-name to tag the image appropriately
+Now let's run a `docker images` to make sure that everything has been built correctly and you should see your image there. 
+Now let's launch this thing using another command (docker-compose up):
+```
+docker-compose -f docker-compose.yml --project-name redis_and_python up -d
+```
+
+Now let's see if this is running in our containers with a `docker ps`
+And you should see that you have created two containers- a _web and a _redis container. This is how we will end up maintaining the count. 
+Now- as this is a more public deployment we will need to grab the assigned IP address to our docker container- so let's look at something like this:
+```
+docker inspect redisandpython_web_1 
+```
+And as you can see there is a ton of data about that container. Let's see about *just* grabbing the IP address:
+```
+WEB_APP_IP=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' redisandpython_web_1)
+
+``` 
+Now let's see if this worked:
+
+```
+curl http://${WEB_APP_IP}:80
+```
+
+And you should see your hit counter app up and running using both REDIS and PYTHON (flask)
+This is (hopefully) a brief taste of the awesomeness that you can create with linked containers! 
+What I want you to think about here is how these containers can be used to create simple things like ETLs and basic micro-apps that do-a-thing and then die. Are there places in your organization where you can use stuff like this? 
+
+##Challenge three:
+Create your own yaml that combines a back end (lightweight- something like REDIS or sqlite) that does it's own hit counter and outputs to the command line!
+
+
+
+
+
+
+
+
 
 
 
