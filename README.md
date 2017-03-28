@@ -366,8 +366,23 @@ And you should see your hit counter app up and running using both REDIS and PYTH
 This is (hopefully) a brief taste of the awesomeness that you can create with linked containers! 
 What I want you to think about here is how these containers can be used to create simple things like ETLs and basic micro-apps that do-a-thing and then die. Are there places in your organization where you can use stuff like this? 
 
-##Challenge three:
+##Challenge FOUR:
 Create your own yaml that combines a back end (lightweight- something like REDIS or sqlite) that does it's own hit counter and outputs to the command line!
+
+###Module FIVE: Managing your containers!
+
+Let's start out with the basic level: managing containers with *puppet*. 
+##Step One: Create the environment
+Let's get puppet! 
+```
+sudo rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-el-7.noarch.rpm
+sudo yum install puppet
+```
+Okay- now we have puppet installed on a single node instance. 
+Let's install a puppet network (yes- we're on a single node...bear with me):
+`docker network create puppet`
+
+
 
 
 
