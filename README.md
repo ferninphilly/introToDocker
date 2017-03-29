@@ -41,7 +41,7 @@ Finally please add in vagrant-vbguest to allow us to mount folders (necessary fo
 
 Now let's go in there and look around: `vagrant ssh` and just to make sure that we are on the right version: `cat /etc/redhat-release`
 
-Should be CentOS 7
+Should be CentOS 6
 
 And, of course, let's: `sudo yum update && sudo yum upgrade` because we want to make sure that we are always on the latest versions
 
@@ -54,7 +54,7 @@ Now we're going to add our repo:
 ```
 sudo yum-config-manager \
      --add-repo \
-     https://download.docker.com/linux/centos/docker-ce.repo
+     https://get.docker.com/rpm/1.7.0/centos-6/RPMS/x86_64/docker-engine-1.7.0-1.el6.x86_64.rpm
 ```     
 Now let's enable the edge repository (it's included in the docker.repo file) but it's not enabled by default. Let's enable it here: `sudo yum-config-manager --enable docker-ce-edge`
 
@@ -382,6 +382,11 @@ Okay- now we have puppet installed on a single node instance.
 Let's install a puppet network (yes- we're on a single node...bear with me):
 `docker network create puppet`
 
+Okay- now that we've got a puppet network going let's see if we can get a "puppet docker container" booted:
+
+```
+docker run --net puppet --name puppet --hostname puppet puppet/puppetserver-standalone
+```
 
 
 
