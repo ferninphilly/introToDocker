@@ -52,9 +52,7 @@ For this next step we're going to be doing an install utilizing the repository. 
 
 Now we're going to add our repo: 
 ```
-sudo yum-config-manager \
-     --add-repo \
-     https://get.docker.com/rpm/1.7.0/centos-6/RPMS/x86_64/docker-engine-1.7.0-1.el6.x86_64.rpm
+sudo rpm -Uvh https://get.docker.com/rpm/1.7.0/centos-6/RPMS/x86_64/docker-engine-1.7.0-1.el6.x86_64.rpm
 ```     
 Now let's enable the edge repository (it's included in the docker.repo file) but it's not enabled by default. Let's enable it here: `sudo yum-config-manager --enable docker-ce-edge`
 
